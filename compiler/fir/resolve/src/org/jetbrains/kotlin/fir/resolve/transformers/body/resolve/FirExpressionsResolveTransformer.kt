@@ -14,13 +14,11 @@ import org.jetbrains.kotlin.fir.references.FirResolvedCallableReference
 import org.jetbrains.kotlin.fir.references.FirSuperReference
 import org.jetbrains.kotlin.fir.references.impl.FirExplicitThisReference
 import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
+import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.ConeInferenceContext
 import org.jetbrains.kotlin.fir.resolve.calls.candidate
-import org.jetbrains.kotlin.fir.resolve.constructType
-import org.jetbrains.kotlin.fir.resolve.firSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.transformers.InvocationKindTransformer
-import org.jetbrains.kotlin.fir.resolve.typeFromCallee
-import org.jetbrains.kotlin.fir.resolve.withNullability
+import org.jetbrains.kotlin.fir.resolve.transformers.StoreReceiver
 import org.jetbrains.kotlin.fir.scopes.impl.withReplacedConeType
 import org.jetbrains.kotlin.fir.symbols.StandardClassIds
 import org.jetbrains.kotlin.fir.symbols.invoke
@@ -43,6 +41,7 @@ class FirExpressionsResolveTransformer(transformer: FirBodyResolveTransformer) :
         implicitReceiverStack,
         qualifiedResolver
     )
+    private val doubleColonExpressionResolver: FirDoubleColonExpressionResolver = FirDoubleColonExpressionResolver(session)
 
     private inline val builtinTypes: BuiltinTypes get() = session.builtinTypes
 
@@ -251,6 +250,24 @@ class FirExpressionsResolveTransformer(transformer: FirBodyResolveTransformer) :
         // TODO: maybe replace with FirAbstractAssignment for performance?
         (result as? FirVariableAssignment)?.let { dataFlowAnalyzer.exitVariableAssignment(it) }
         return result.compose()
+    }
+
+    override fun transformCallableReferenceAccess(
+        callableReferenceAccess: FirCallableReferenceAccess,
+        data: Any?
+    ): CompositeTransformResult<FirStatement> {
+        val transformedLHS =
+            callableReferenceAccess.explicitReceiver?.transform<FirExpression, Any>(this, noExpectedType)?.single
+
+        val callableReferenceAccessWithTransformedLHS =
+            if (transformedLHS != null)
+                callableReferenceAccess.transformExplicitReceiver(StoreReceiver, transformedLHS) as FirCallableReferenceAccess
+            else
+                callableReferenceAccess
+
+        val lhsResult = doubleColonExpressionResolver.resolveDoubleColonLHS(callableReferenceAccessWithTransformedLHS)
+
+        return callResolver.resolveCallableReference(callableReferenceAccessWithTransformedLHS, lhsResult).compose()
     }
 
     override fun transformGetClassCall(getClassCall: FirGetClassCall, data: Any?): CompositeTransformResult<FirStatement> {
