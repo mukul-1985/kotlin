@@ -116,6 +116,9 @@ abstract class AbstractFirDiagnosticsSmokeTest : BaseDiagnosticsTest() {
     }
 
     private fun checkFailureFile(failure: AssertionError, failureFile: File) {
+        if (!failureFile.exists()) {
+            throw failure
+        }
         val failureMessage = buildString {
             appendln(failure.message)
             failure.cause?.let {
