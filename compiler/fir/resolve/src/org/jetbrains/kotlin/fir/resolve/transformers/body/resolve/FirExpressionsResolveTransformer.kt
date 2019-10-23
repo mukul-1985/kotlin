@@ -265,6 +265,15 @@ class FirExpressionsResolveTransformer(transformer: FirBodyResolveTransformer) :
             else
                 callableReferenceAccess
 
+        if (data != null) {
+            val resolvedReference =
+                components.syntheticCallGenerator.resolveCallableReferenceWithSyntheticOuterCall(
+                    callableReferenceAccess, data as? FirTypeRef
+                ) ?: callableReferenceAccess
+
+            return resolvedReference.compose()
+        }
+
         return callableReferenceAccessWithTransformedLHS.compose()
     }
 
