@@ -401,7 +401,8 @@ object ImplementationConfigurator : AbstractFirTreeImplementationConfigurator() 
                 withGetter = true
             }
             defaultNull("body")
-            useTypes(modalityType)
+            default("contractDescription", "FirEmptyContractDescription")
+            useTypes(modalityType, emptyContractDescriptionType)
             kind = OpenClass
         }
 
@@ -551,6 +552,8 @@ object ImplementationConfigurator : AbstractFirTreeImplementationConfigurator() 
             parents += modifiableFunction.withArg(simpleFunction)
             parents += modifiableTypeParametersOwner
             defaultNull("body")
+            default("contractDescription", "FirEmptyContractDescription")
+            useTypes(emptyContractDescriptionType)
         }
 
         impl(delegatedTypeRef) {
