@@ -5,14 +5,16 @@
 
 package org.jetbrains.kotlin.fir.resolve.transformers.body.resolve
 
-import org.jetbrains.kotlin.contracts.description.InvocationKind
 import org.jetbrains.kotlin.fir.*
-import org.jetbrains.kotlin.fir.declarations.FirAnonymousFunction
 import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.expressions.impl.FirErrorExpressionImpl
 import org.jetbrains.kotlin.fir.expressions.impl.FirExpressionWithSmartcastImpl
+import org.jetbrains.kotlin.fir.expressions.impl.FirFunctionCallImpl
+import org.jetbrains.kotlin.fir.expressions.impl.FirVariableAssignmentImpl
 import org.jetbrains.kotlin.fir.references.FirDelegateFieldReference
 import org.jetbrains.kotlin.fir.references.FirResolvedCallableReference
 import org.jetbrains.kotlin.fir.references.FirSuperReference
+import org.jetbrains.kotlin.fir.references.impl.FirErrorNamedReferenceImpl
 import org.jetbrains.kotlin.fir.references.impl.FirExplicitThisReference
 import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
 import org.jetbrains.kotlin.fir.resolve.calls.ConeInferenceContext
@@ -24,6 +26,7 @@ import org.jetbrains.kotlin.fir.resolve.typeFromCallee
 import org.jetbrains.kotlin.fir.resolve.withNullability
 import org.jetbrains.kotlin.fir.scopes.impl.withReplacedConeType
 import org.jetbrains.kotlin.fir.symbols.StandardClassIds
+import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.fir.symbols.invoke
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.impl.ConeClassTypeImpl
@@ -31,7 +34,6 @@ import org.jetbrains.kotlin.fir.types.impl.FirErrorTypeRefImpl
 import org.jetbrains.kotlin.fir.types.impl.FirImplicitUnitTypeRef
 import org.jetbrains.kotlin.fir.types.impl.FirResolvedTypeRefImpl
 import org.jetbrains.kotlin.fir.visitors.CompositeTransformResult
-import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.fir.visitors.compose
 import org.jetbrains.kotlin.fir.visitors.transformSingle
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -188,6 +190,57 @@ class FirExpressionsResolveTransformer(transformer: FirBodyResolveTransformer) :
         } else {
             transformExpression(operatorCall, data).single
         } as FirOperatorCall
+
+        if (operatorCall.operation in FirOperation.ASSIGNMENTS) {
+            require(operatorCall.operation != FirOperation.ASSIGN)
+            @Suppress("NAME_SHADOWING")
+            val operatorCall = operatorCall.transformArguments(this, noExpectedType)
+            val (leftArgument, rightArgument) = operatorCall.arguments
+            // x.plusAssign(y)
+            val assignmentOperatorName = FirOperationNameConventions.ASSIGNMENTS.getValue(operatorCall.operation)
+            // TODO: disable DataFlowAnayzer for resolving that two calls
+            val assignOperatorCall = FirFunctionCallImpl(operatorCall.psi).apply {
+                explicitReceiver = leftArgument
+                arguments += rightArgument
+                calleeReference = FirSimpleNamedReference(
+                    operatorCall.psi,
+                    assignmentOperatorName,
+                    candidateSymbol = null
+                )
+            }
+            val resolvedAssignCall = assignOperatorCall.transformSingle(this, noExpectedType)
+            val assignCallReference = resolvedAssignCall.toResolvedCallableReference()
+            // x + y
+            val simpleOperatorName = FirOperationNameConventions.ASSIGNMENTS_TO_SIMPLE_OPERATOR.getValue(operatorCall.operation)
+            val simpleOperatorCall = FirFunctionCallImpl(operatorCall.psi).apply {
+                explicitReceiver = leftArgument
+                arguments += rightArgument
+                calleeReference = FirSimpleNamedReference(
+                    operatorCall.psi,
+                    simpleOperatorName,
+                    candidateSymbol = null
+                )
+            }
+            val resolvedOperatorCall = simpleOperatorCall.transformSingle(this, noExpectedType)
+            val operatorCallReference = resolvedOperatorCall.toResolvedCallableReference()
+
+            val property = (leftArgument.toResolvedCallableSymbol() as? FirPropertySymbol)?.fir
+            if (operatorCallReference == null || property?.isVal == true) {
+                return resolvedAssignCall.compose()
+            }
+            if (assignCallReference == null) {
+                val assignment = FirVariableAssignmentImpl(operatorCall.psi, false, resolvedOperatorCall, FirOperation.ASSIGN).apply {
+                    lValue = (leftArgument as? FirQualifiedAccess)?.calleeReference
+                        ?: FirErrorNamedReferenceImpl(null, "Unresolved reference")
+                }
+                return assignment.transform(transformer, noExpectedType)
+            }
+            return FirErrorExpressionImpl(
+                operatorCall.psi,
+                "Operator overload ambiguity. $assignmentOperatorName and $simpleOperatorName are compatible"
+            ).compose()
+        }
+
         dataFlowAnalyzer.exitOperatorCall(result)
         return result.compose()
     }
