@@ -87,20 +87,11 @@ class KotlinKarma(override val compilation: KotlinJsCompilation) : KotlinJsTestF
         configDirectory = dir
     }
 
-    fun useChrome() = useChromeWithPuppeteer(
-        id = "Chrome",
-        envVar = CHROME_BIN
-    )
+    fun useChrome() = useBrowser("Chrome", versions.karmaChromeLauncher)
 
-    fun useChromeCanary() = useChromeWithPuppeteer(
-        id = "ChromeCanary",
-        envVar = CHROME_CANARY_BIN
-    )
+    fun useChromeCanary() = useBrowser("ChromeCanary", versions.karmaChromeLauncher)
 
-    fun useChromeHeadless() = useChromeWithPuppeteer(
-        id = "ChromeHeadless",
-        envVar = CHROME_BIN
-    )
+    fun useChromeHeadless() = useBrowser("ChromeHeadless", versions.karmaChromeLauncher)
 
     fun usePhantomJS() = useBrowser("PhantomJS", versions.karmaPhantomJsLauncher)
 
@@ -112,24 +103,16 @@ class KotlinKarma(override val compilation: KotlinJsCompilation) : KotlinJsTestF
 
     fun useIe() = useBrowser("IE", versions.karmaIeLauncher)
 
-    private fun useBrowser(id: String, dependency: NpmPackageVersion) {
-        config.browsers.add(id)
-        requiredDependencies.add(dependency)
-    }
-
-    private fun useChromeWithPuppeteer(
-        id: String,
-        envVar: String
-    ) {
-        usePuppeteer(envVar)
-        useBrowser(id, versions.karmaChromeLauncher)
-    }
-
-    private fun usePuppeteer(envVar: String) {
+    fun usePuppeteer() {
         requiredDependencies.add(versions.puppeteer)
 
         //language=JavaScript 1.8
-        envJsCollector[envVar] = "require('puppeteer').executablePath()"
+        envJsCollector[CHROME_BIN] = "require('puppeteer').executablePath()"
+    }
+
+    private fun useBrowser(id: String, dependency: NpmPackageVersion) {
+        config.browsers.add(id)
+        requiredDependencies.add(dependency)
     }
 
     private fun useMocha() {

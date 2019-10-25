@@ -12,7 +12,14 @@ repositories {
 
 kotlin {
     target {
-        browser()
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                    usePuppeteer()
+                }
+            }
+        }
     }
 
     sourceSets {
