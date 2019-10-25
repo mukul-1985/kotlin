@@ -85,7 +85,7 @@ private fun JavaType?.enhancePossiblyFlexible(
             )
 
             FirResolvedTypeRefImpl(
-                psi = null,
+                source = null,
                 type = coneFlexibleOrSimpleType(session, lowerResult, upperResult)
             ).apply {
                 this.annotations += annotations
@@ -93,7 +93,7 @@ private fun JavaType?.enhancePossiblyFlexible(
         }
         else -> {
             val enhanced = type.toNotNullConeKotlinType(session, javaTypeParameterStack)
-            FirResolvedTypeRefImpl(psi = null, type = enhanced).apply {
+            FirResolvedTypeRefImpl(source = null, type = enhanced).apply {
                 this.annotations += annotations
             }
         }

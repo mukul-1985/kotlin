@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.fir.tree.generator
 
-import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.contracts.description.InvocationKind
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -22,7 +21,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
 
-val psiElementType = type(PsiElement::class)
+val sourceElementType = type("fir", "FirSourceElement")
 val jumpTargetType = type("fir", "FirTarget")
 val constKindType = type(IrConstKind::class)
 val operationType = type("fir.expressions", "FirOperation")

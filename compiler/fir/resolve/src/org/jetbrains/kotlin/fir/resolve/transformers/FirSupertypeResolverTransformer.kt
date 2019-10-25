@@ -162,7 +162,7 @@ class FirSupertypeResolverTransformer : FirAbstractTreeTransformer(phase = FirRe
                 val coneType = (superTypeRef as FirResolvedTypeRef).type
                 if (coneType is ConeTypeParameterType) {
                     resultingTypeRefs.add(
-                        FirErrorTypeRefImpl(superTypeRef.psi, "Type parameter cannot be a super-type: ${coneType.render()}")
+                        FirErrorTypeRefImpl(superTypeRef.source, "Type parameter cannot be a super-type: ${coneType.render()}")
                     )
                     continue
                 }
@@ -171,7 +171,7 @@ class FirSupertypeResolverTransformer : FirAbstractTreeTransformer(phase = FirRe
 
                 if (superTypeClassId.outerClasses().any { it.areSupertypesComputing() }) {
                     resultingTypeRefs.add(
-                        FirErrorTypeRefImpl(superTypeRef.psi, "Recursion detected: ${superTypeRef.render()}")
+                        FirErrorTypeRefImpl(superTypeRef.source, "Recursion detected: ${superTypeRef.render()}")
                     )
 
                     continue

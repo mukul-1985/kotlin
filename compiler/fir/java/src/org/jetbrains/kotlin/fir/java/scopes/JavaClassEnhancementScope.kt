@@ -84,7 +84,7 @@ class JavaClassEnhancementScope(
                 val symbol = FirFieldSymbol(original.callableId)
                 with(firElement) {
                     FirJavaField(
-                        firElement.psi,
+                        firElement.source,
                         this@JavaClassEnhancementScope.session,
                         symbol,
                         name,
@@ -172,7 +172,7 @@ class JavaClassEnhancementScope(
             val (newTypeRef, newDefaultValue) = newInfo
             with(valueParameter) {
                 FirValueParameterImpl(
-                    psi, this@JavaClassEnhancementScope.session,
+                    source, this@JavaClassEnhancementScope.session,
                     newTypeRef, this.name,
                     FirVariableSymbol(this.name),
                     defaultValue ?: newDefaultValue, isCrossinline, isNoinline, isVararg
@@ -192,7 +192,7 @@ class JavaClassEnhancementScope(
                 }
                 if (firMethod.isPrimary) {
                     FirPrimaryConstructorImpl(
-                        firMethod.psi,
+                        firMethod.source,
                         this@JavaClassEnhancementScope.session,
                         newReturnTypeRef,
                         null,
@@ -201,7 +201,7 @@ class JavaClassEnhancementScope(
                     )
                 } else {
                     FirConstructorImpl(
-                        firMethod.psi,
+                        firMethod.source,
                         this@JavaClassEnhancementScope.session,
                         newReturnTypeRef,
                         newReceiverTypeRef,
@@ -215,7 +215,7 @@ class JavaClassEnhancementScope(
                 }
             }
             else -> FirSimpleFunctionImpl(
-                firMethod.psi,
+                firMethod.source,
                 this@JavaClassEnhancementScope.session,
                 newReturnTypeRef,
                 newReceiverTypeRef,

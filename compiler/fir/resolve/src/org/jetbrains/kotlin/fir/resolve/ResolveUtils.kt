@@ -207,7 +207,7 @@ fun FirFunction<*>.constructFunctionalTypeRef(session: FirSession): FirResolvedT
 
     val functionalType = createFunctionalType(session, parameters, receiverTypeRef?.coneTypeUnsafe(), rawReturnType)
 
-    return FirResolvedTypeRefImpl(psi, functionalType)
+    return FirResolvedTypeRefImpl(source, functionalType)
 }
 
 fun createFunctionalType(
@@ -274,7 +274,7 @@ fun <T : FirResolvable> BodyResolveComponents.typeFromCallee(access: T): FirReso
 
     return when (val newCallee = access.calleeReference) {
         is FirErrorNamedReference ->
-            FirErrorTypeRefImpl(access.psi, newCallee.errorReason)
+            FirErrorTypeRefImpl(access.source, newCallee.errorReason)
         is FirNamedReferenceWithCandidate -> {
             typeFromSymbol(newCallee.candidateSymbol, makeNullable)
         }
