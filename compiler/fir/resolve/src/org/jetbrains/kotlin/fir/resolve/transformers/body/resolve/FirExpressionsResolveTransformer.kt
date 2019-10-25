@@ -257,6 +257,10 @@ class FirExpressionsResolveTransformer(transformer: FirBodyResolveTransformer) :
         callableReferenceAccess: FirCallableReferenceAccess,
         data: Any?
     ): CompositeTransformResult<FirStatement> {
+        if (callableReferenceAccess.calleeReference is FirResolvedNamedReference) {
+            return callableReferenceAccess.compose()
+        }
+
         val transformedLHS =
             callableReferenceAccess.explicitReceiver?.transform<FirExpression, Any>(this, noExpectedType)?.single
 
