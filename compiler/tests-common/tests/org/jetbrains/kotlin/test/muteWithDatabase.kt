@@ -20,6 +20,10 @@ private class MutedTest(
         if (it.isEmpty()) throw IllegalArgumentException("Can't get class name")
     }
     val simpleClassName = classNameKey.substringAfterLast(".")
+
+    override fun toString(): String {
+        return "Mute($key, $issue, $hasFailFile)"
+    }
 }
 
 private class MutedSet(muted: List<MutedTest>) {
@@ -28,6 +32,24 @@ private class MutedSet(muted: List<MutedTest>) {
         muted
             .groupBy { it.methodName } // Method name -> List of muted tests
             .mapValues { (_, tests) -> tests.groupBy { it.simpleClassName } }
+
+    init {
+        val groups: List<List<MutedTest>> = cache.values.flatMap { it.values }
+        for (group in groups) {
+            for (test in group) {
+                checkRedeclaration(test, group)
+            }
+        }
+    }
+
+    private fun checkRedeclaration(test: MutedTest, group: List<MutedTest>) {
+        for (mutedTestOther in group) {
+            if (test === mutedTestOther) continue
+            if (mutedTestOther.classNameKey.endsWith(test.classNameKey)) {
+                throw IllegalArgumentException("Redeclartion:\n$test\n$mutedTestOther")
+            }
+        }
+    }
 
     fun mutedTest(testCase: TestCase): MutedTest? {
         val mutedTests = cache[testCase.name]?.get(testCase.javaClass.simpleName) ?: return null
