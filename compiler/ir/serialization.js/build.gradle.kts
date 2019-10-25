@@ -166,7 +166,7 @@ fun JavaExec.buildKLib(sources: List<String>, dependencies: List<String>, outPat
 
 val fullRuntimeDir = buildDir.resolve("fullRuntime/klib")
 
-val generateFullRuntimeKLib by eagerTask<NoDebugJavaExec> {
+val generateFullRuntimeKLib by eagerTask<JavaExec> {
     dependsOn(fullRuntimeSources)
 
     buildKLib(sources = listOf(fullRuntimeSources.get().outputs.files.singleFile.path),
